@@ -1,0 +1,490 @@
+# API Documentation
+
+## Overview
+
+Modress is a RESTful API built with Go (Gin framework) that provides e-commerce functionality including user authentication, product management, and store operations. This documentation covers all available endpoints, request/response formats, and authentication requirements.
+
+## Table of Contents
+
+1. [Base URL](#base-url)
+2. [Authentication](#authentication)
+3. [Endpoints](#endpoints)
+   - [Auth](#auth)
+   - [Users](#users)
+   - [Products](#products)
+   - [Stores](#stores)
+   - [WebSocket](#websocket)
+4. [Error Handling](#error-handling)
+5. [Environment Variables](#environment-variables)
+6. [Running the API](#running-the-api)
+
+## Base URL
+
+The base URL for all API endpoints is `/api/v1`. All endpoints should be prefixed with this path.
+
+## Authentication
+
+Most endpoints require authentication via JWT (JSON Web Token). To authenticate:
+
+1. Register a user or login to get an access token
+2. Include the token in the `Authorization` header of subsequent requests:
+   ```
+   Authorization: Bearer <your_token>
+   ```
+
+## Endpoints
+
+### Auth
+
+#### Register a new user
+
+```http
+POST /api/v1/auth/register
+```
+
+**Request Body:**
+```json
+{
+  "username": "string (required, alphanum, min=3, max=100)",
+  "email": "string (required, email)",
+  "phone": "string (optional, e164 format)",
+  "password": "string (required, min=6, max=72)"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "User created successfully",
+  "user": {
+    "id": "number",
+    "username": "string",
+    "email": "string",
+    "phone": "string|null",
+    "role": "string",
+    "status": "string",
+    "created_at": "timestamp",
+    "updated_at": "timestamp"
+  }
+}
+```
+
+#### Login
+
+```http
+POST /api/v1/auth/login
+```
+
+**Request Body:**
+```json
+{
+  "email": "string (required)",
+  "password": "string (required)"
+}
+```
+
+**Response:**
+```json
+{
+  "access_token": "string (JWT)",
+  "user": {
+    "id": "number",
+    "username": "string",
+    "email": "string",
+    "phone": "string|null",
+    "role": "string",
+    "status": "string",
+    "created_at": "timestamp",
+    "updated_at": "timestamp"
+  }
+}
+```
+
+### Users
+
+All user endpoints require authentication.
+
+#### Get user profile
+
+```http
+GET /api/v1/users/me
+```
+
+**Response:**
+```json
+{
+  "id": "number",
+  "username": "string",
+  "email": "string",
+  "phone": "string|null",
+  "role": "string",
+  "status": "string",
+  "created_at": "timestamp",
+  "updated_at": "timestamp"
+}
+```
+
+#### Update profile
+
+```http
+PUT /api/v1/users/me
+```
+
+**Request Body:**
+```json
+{
+  "username": "string (optional, alphanum, min=3, max=100)",
+  "email": "string (optional, email)",
+  "phone": "string (optional, e164 format)"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Profile updated successfully",
+  "user": {
+    "id": "number",
+    "username": "string",
+    "email": "string",
+    "phone": "string|null",
+    "role": "string",
+    "status": "string",
+    "created_at": "timestamp",
+    "updated_at": "timestamp"
+  }
+}
+```
+
+#### Delete profile
+
+```http
+DELETE /api/v1/users/me
+```
+
+**Response:**
+```json
+{
+  "message": "Profile deleted successfully"
+}
+```
+
+### Products
+
+#### Get all products (public)
+
+```http
+GET /api/v1/products
+```
+
+**Query Parameters:**
+- `page`: number (default: 1)
+- `limit`: number (default: 20, max: 100)
+
+**Response:**
+```json
+[
+  {
+    "id": "number",
+    "store_id": "number",
+    "title": "string",
+    "description": "string|null",
+    "price": "number (decimal)",
+    "cost": "number (decimal)|null",
+    "sku": "string|null",
+    "barcode": "string|null",
+    "quantity": "number",
+    "is_active": "boolean",
+    "category": "string|null",
+    "created_at": "timestamp",
+    "updated_at": "timestamp"
+  }
+]
+```
+
+#### Get product by ID (public)
+
+```http
+GET /api/v1/products/:id
+```
+
+**Response:**
+```json
+{
+  "id": "number",
+  "store_id": "number",
+  "title": "string",
+  "description": "string|null",
+  "price": "number (decimal)",
+  "cost": "number (decimal)|null",
+  "sku": "string|null",
+  "barcode": "string|null",
+  "quantity": "number",
+  "is_active": "boolean",
+  "category": "string|null",
+  "created_at": "timestamp",
+  "updated_at": "timestamp"
+}
+```
+
+#### Search products (public)
+
+```http
+GET /api/v1/products/search?q=search_term
+```
+
+**Query Parameters:**
+- `q`: string (required, search term)
+- `page`: number (default: 1)
+- `limit`: number (default: 20, max: 100)
+
+**Response:** Same as "Get all products"
+
+#### Create product (protected - requires authentication)
+
+```http
+POST /api/v1/products
+```
+
+**Request Body:**
+```json
+{
+  "title": "string (required, min=3, max=255)",
+  "description": "string (optional)",
+  "price": "number (required, min=0)",
+  "cost": "number (optional, min=0)",
+  "sku": "string (optional, max=100)",
+  "barcode": "string (optional, max=100)",
+  "quantity": "number (required, min=0)",
+  "category": "string (optional, max=100)"
+}
+```
+
+**Response:**
+```json
+{
+  "id": "number",
+  "store_id": "number",
+  "title": "string",
+  "description": "string|null",
+  "price": "number (decimal)",
+  "cost": "number (decimal)|null",
+  "sku": "string|null",
+  "barcode": "string|null",
+  "quantity": "number",
+  "is_active": "boolean",
+  "category": "string|null",
+  "created_at": "timestamp",
+  "updated_at": "timestamp"
+}
+```
+
+#### Update product (protected - requires authentication)
+
+```http
+PUT /api/v1/products/:id
+```
+
+**Request Body:**
+```json
+{
+  "title": "string (optional, min=3, max=255)",
+  "description": "string (optional)",
+  "price": "number (optional, min=0)",
+  "cost": "number (optional, min=0)",
+  "sku": "string (optional, max=100)",
+  "barcode": "string (optional, max=100)",
+  "quantity": "number (optional, min=0)",
+  "is_active": "boolean (optional)",
+  "category": "string (optional, max=100)"
+}
+```
+
+**Response:** Same as create product
+
+#### Delete product (protected - requires authentication)
+
+```http
+DELETE /api/v1/products/:id
+```
+
+**Response:** 204 No Content
+
+### Stores
+
+#### Get all stores (public)
+
+```http
+GET /api/v1/stores
+```
+
+**Query Parameters:**
+- `page`: number (default: 1)
+- `limit`: number (default: 20, max: 100)
+
+**Response:**
+```json
+[
+  {
+    "id": "number",
+    "owner_id": "number",
+    "name": "string",
+    "slug": "string",
+    "description": "string|null",
+    "logo_url": "string|null",
+    "banner_url": "string|null",
+    "is_approved": "boolean",
+    "created_at": "timestamp",
+    "updated_at": "timestamp"
+  }
+]
+```
+
+#### Get store by ID (public)
+
+```http
+GET /api/v1/stores/:id
+```
+
+**Response:**
+```json
+{
+  "id": "number",
+  "owner_id": "number",
+  "name": "string",
+  "slug": "string",
+  "description": "string|null",
+  "logo_url": "string|null",
+  "banner_url": "string|null",
+  "is_approved": "boolean",
+  "created_at": "timestamp",
+  "updated_at": "timestamp"
+}
+```
+
+#### Get store by slug (public)
+
+```http
+GET /api/v1/stores/slug/:slug
+```
+
+**Response:** Same as get store by ID
+
+#### Create store (protected - requires authentication)
+
+```http
+POST /api/v1/stores
+```
+
+**Request Body:**
+```json
+{
+  "name": "string (required, min=3, max=150)",
+  "description": "string (optional)",
+  "logo_url": "string (optional, URL)",
+  "banner_url": "string (optional, URL)"
+}
+```
+
+**Response:**
+```json
+{
+  "id": "number",
+  "owner_id": "number",
+  "name": "string",
+  "slug": "string",
+  "description": "string|null",
+  "logo_url": "string|null",
+  "banner_url": "string|null",
+  "is_approved": "boolean",
+  "created_at": "timestamp",
+  "updated_at": "timestamp"
+}
+```
+
+#### Update store (protected - requires authentication)
+
+```http
+PUT /api/v1/stores/:id
+```
+
+**Request Body:**
+```json
+{
+  "name": "string (optional, min=3, max=150)",
+  "description": "string (optional)",
+  "logo_url": "string (optional, URL)",
+  "banner_url": "string (optional, URL)"
+}
+```
+
+**Response:** Same as create store
+
+#### Delete store (protected - requires authentication)
+
+```http
+DELETE /api/v1/stores/:id
+```
+
+**Response:** 204 No Content
+
+### WebSocket
+
+#### Connect to WebSocket (protected - requires authentication)
+
+```http
+GET /api/v1/ws
+```
+
+**Protocol:** WebSocket
+
+**Description:** Establishes a WebSocket connection for real-time communication. The connection is authenticated using the same JWT token (passed in the Authorization header).
+
+## Error Handling
+
+Errors are returned in the following format:
+
+```json
+{
+  "error": "string (error message)",
+  "details": ["array of validation errors (optional)"]
+}
+```
+
+**Common HTTP Status Codes:**
+- 400 Bad Request - Invalid request data
+- 401 Unauthorized - Missing or invalid authentication
+- 403 Forbidden - Authenticated but not authorized
+- 404 Not Found - Resource not found
+- 409 Conflict - Resource already exists
+- 500 Internal Server Error - Server error
+
+## Environment Variables
+
+The API requires the following environment variables:
+
+- `DB_URL`: PostgreSQL connection URL
+- `JWT_SECRET`: Secret key for JWT signing
+- `PORT`: Port to run the server on (default: 8000)
+
+Create a `.env` file in the root directory with these variables.
+
+## Running the API
+
+1. Install dependencies:
+   ```bash
+   go mod tidy
+   ```
+
+2. Set up environment variables (create `.env` file)
+
+3. Run the server:
+   ```bash
+   go run main.go
+   ```
+
+The API will be available at `http://localhost:<PORT>` (default: 8000).
+
+## License
+
+[MIT License](LICENSE)
