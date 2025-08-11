@@ -2,7 +2,7 @@
 
 ## Overview
 
-Modress is a RESTful API built with Go (Gin framework) that provides e-commerce functionality including user authentication, product management, and store operations. This documentation covers all available endpoints, request/response formats, and authentication requirements.
+mod is a RESTful API built with Go (Gin framework) that provides e-commerce functionality including user authentication, product management, and store operations. This documentation covers all available endpoints, request/response formats, and authentication requirements.
 
 ## Table of Contents
 
